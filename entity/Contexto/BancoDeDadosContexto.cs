@@ -1,18 +1,40 @@
 using Microsoft.EntityFrameworkCore;
 using entity.Entidades;
+using Microsoft.Extensions.Configuration;
+using System;
 
 namespace entity.Contexto;
 
-class BancoDeDadosContexto : DbContext
+public class BancoDeDadosContexto : DbContext
 {
+    // Estratégia 3. Passando a dependencia via contrutor
+    public BancoDeDadosContexto(DbContextOptions<BancoDeDadosContexto> options) : base(options)
+    {
+
+    }
+
+    public BancoDeDadosContexto()
+    {
+
+    }
+    //Estrategia 1 = vc pode criar a instância de onde estiver do seu contexto
     public DbSet<Cliente> Clientes { get; set; } = default!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseMySql("server=localhost;database=aula_entity;uid=root;password=654321",
-        new MySqlServerVersion(new Version(8, 0, 33)));
+        if (!optionsBuilder.IsConfigured)
+        {
+            var configuration = new ConfigurationBuilder()
+        .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+        .AddJsonFile("appsettings.json")
+        .Build();
 
-        //optionsBuilder.UseMySQL("server=localhost;database=aula_entity;uid=root;password=654321");
+            optionsBuilder.UseMySql(configuration.GetConnectionString("conexao"),
+            new MySqlServerVersion(new Version(8, 0, 33)));
+
+            //optionsBuilder.UseMySQL("server=localhost;database=aula_entity;uid=root;password=654321");
+        }
+
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
