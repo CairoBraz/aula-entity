@@ -1,0 +1,62 @@
+Alterando o código para retornar um Action Result para statusCode
+    return Results.NotFound(new { Mensagem = "Não encontrado" });
+    return Results.NoContent();
+Buscas com foregeyn keys
+    criar entidade de Cliente, Pedido, Produto, PedidoProduto
+
+Padrão para ef entender como foregeyn key
+    public int ClienteId{get; set; }
+    public Cliente Cliente{get; set;} = default!;
+
+Definir as propriedades que quero no meu DbContexto
+    public DbSet<Cliente> Clientes { get; set; } = default!;
+    public DbSet<Fornecedor> Fornecedores { get; set; } = default!;
+    public DbSet<Pedido> Pedidos { get; set; } = default!;
+    public DbSet<Produto> produtos { get; set; } = default!;
+    public DbSet<PedidoProduto> PedidosProdutos { get; set; } = default!;
+
+    #region "Produto"
+        // Defina aqui as configurações específicas do modelo, como chaves primárias, restrições, etc.
+        modelBuilder.Entity<Produto>(entity =>
+        {
+            entity.ToTable("produtos");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd().UseMySqlIdentityColumn();
+
+            entity.Property(e => e.Nome)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("nome");
+
+            entity.Property(e => e.Valor)
+                .IsRequired()
+                .HasColumnName("valor");
+
+            entity.Property(e => e.Descricao)
+                .HasColumnType("text");
+        });
+        #endregion
+
+testar as criação dotnet ef migrations add Pedidos;
+
+//onDelete: ReferentialAction.Cascade); //Se deletar cliente deleta também os produtos
+                        //onDelete: ReferentialAction.NoAction); //Não realiza nada
+                        onDelete: ReferentialAction.Restrict); //Não permite deletar
+
+aplicar as migrations dotnet ef database update
+conectar no MySql $ mysql -h localhost -u root -p'654321'
+
+
+ACIMA FOI A FORMA 1 DOS VÍNCULOS DE FOREGEYN KEY
+A FORMA DOIS É UTILIZANDO ANOTATIONS, BASEANDO NO GEPETO
+
+FAZENDO JOINS COM ef
+CRIAR A ROTA /clientes-com-pedidos
+
+git da aula do Danilo:
+https://github.com/torneseumprogramador/anima-treinamento-entity.git
+
+Aula 06_06 Finalizada.
+Próxima aula a assistir 07_06

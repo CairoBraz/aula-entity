@@ -86,9 +86,39 @@ app.MapGet("/weatherforecast", () =>
 
 app.MapGet("/", ([FromServices] BancoDeDadosContexto contexto) =>
 {
+    //return Results.NotFound(new { Mensagem = "Não encontrado" });
+    //return Results.NoContent();
     return contexto.Clientes.ToList();
 })
 .WithName("Hom")
+.WithOpenApi();
+
+app.MapGet("/clientes-com-pedidos", ([FromServices] BancoDeDadosContexto contexto) =>
+{
+    //return contexto.Pedidos.ToList(); //Não traz a instancia de cliente;
+    /*return contexto.Pedidos
+        .Include(p => p.Cliente).ToList();//traz tudo de pedidos e cliente*/
+    /*return contexto.Pedidos
+        .Include(p => p.Cliente)
+                .Select(p => new
+                {
+                    cli_nome = p.Cliente.Nome,
+                    cli_telefone = p.Cliente.Telefone,
+                    ValorTotal = p.ValorTotal
+                }).ToList();*/
+    var lista = contexto.Pedidos
+        .Include(p => p.Cliente)
+                .Select(p => new
+                {
+                    cli_nome = p.Cliente.Nome,
+                    cli_telefone = p.Cliente.Telefone,
+                    ValorTotal = p.ValorTotal
+                })
+                .Skip(0) // Offsetdefine o número de registros a serem ignorados
+                .Take(10) // limitador
+                .ToList();
+})
+.WithName("ClientesComPedidos")
 .WithOpenApi();
 
 app.Run();

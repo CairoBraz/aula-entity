@@ -21,6 +21,9 @@ public class BancoDeDadosContexto : DbContext
     //Estrategia 1 = vc pode criar a instância de onde estiver do seu contexto
     public DbSet<Cliente> Clientes { get; set; } = default!;
     public DbSet<Fornecedor> Fornecedores { get; set; } = default!;
+    public DbSet<Pedido> Pedidos { get; set; } = default!;
+    public DbSet<Produto> produtos { get; set; } = default!;
+    public DbSet<PedidoProduto> PedidosProdutos { get; set; } = default!;
 
     //Para criar a migration dotnet ef migrations add CriandoFornecedor
     //Para aplicar a migration dotnet ef database update
@@ -65,6 +68,30 @@ public class BancoDeDadosContexto : DbContext
                 .HasColumnName("cli_telefone")
                 .HasComment("Este é o número do telefone do cliente.");
             entity.Property(e => e.Observacao)
+                .HasColumnType("text");
+        });
+        #endregion
+
+        #region "Produto"
+        // Defina aqui as configurações específicas do modelo, como chaves primárias, restrições, etc.
+        modelBuilder.Entity<Produto>(entity =>
+        {
+            entity.ToTable("produtos");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd().UseMySqlIdentityColumn();
+
+            entity.Property(e => e.Nome)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("nome");
+
+            entity.Property(e => e.Valor)
+                .IsRequired()
+                .HasColumnName("valor");
+
+            entity.Property(e => e.Descricao)
                 .HasColumnType("text");
         });
         #endregion
