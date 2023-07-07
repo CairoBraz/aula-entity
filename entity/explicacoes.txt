@@ -60,3 +60,48 @@ https://github.com/torneseumprogramador/anima-treinamento-entity.git
 
 Aula 06_06 Finalizada.
 Próxima aula a assistir 07_06
+
+Usar o modelo de models views
+    criar a pasta ModelViews
+    criar PedidoCliente.cs dentro da pasta
+        Este cara tem namespace
+        public struct PedidoCliente{
+            public string Nome {get; set;}
+            public string Telefone {get; set;}
+            public double Valor Total
+        }
+    Ai eu faço o new do meu objeto na minha Program
+
+depois dotnet watch run
+
+Colocar paginação
+vai receber um int page na chamada, coloca recebendo from query 
+    [FromQuery] int? page na chamada da rota;
+    var totalPage = 4;
+    if(page == null ||  < 1 )
+        page = 1
+    ...
+    .Skip(offset)
+    Take(totalPage).ToList
+
+    calculo do Offset
+    inte offset = ((int)page -1) * totalPage
+
+Dessa forma o frontend não consegue saber a quantidade total de páginas
+
+criar o modelvies RegistroPaginado
+public int TotalRegistro
+public int PaginaCorrente
+publicint TotalPorPagina
+public List<object registros
+
+Agora no objeto instancia um RegistroPagainado
+
+Também existem plugins de paginação no nuget
+
+Exemplo de uma query mais complexa
+
+AGORA EXEMPLO USANDO LYNQ TO MySql
+
+https://github.com/torneseumprogramador/minimal_api_entity_ecommerce/tree/main
+

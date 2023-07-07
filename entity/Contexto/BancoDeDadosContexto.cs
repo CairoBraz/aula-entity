@@ -22,7 +22,7 @@ public class BancoDeDadosContexto : DbContext
     public DbSet<Cliente> Clientes { get; set; } = default!;
     public DbSet<Fornecedor> Fornecedores { get; set; } = default!;
     public DbSet<Pedido> Pedidos { get; set; } = default!;
-    public DbSet<Produto> produtos { get; set; } = default!;
+    public DbSet<Produto> Produtos { get; set; } = default!;
     public DbSet<PedidoProduto> PedidosProdutos { get; set; } = default!;
 
     //Para criar a migration dotnet ef migrations add CriandoFornecedor

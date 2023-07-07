@@ -2,6 +2,7 @@ using entity.Contexto;
 using Microsoft.EntityFrameworkCore;
 using entity.Entidades;
 using Microsoft.AspNetCore.Mvc;
+using entity.ModelViews;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -93,7 +94,7 @@ app.MapGet("/", ([FromServices] BancoDeDadosContexto contexto) =>
 .WithName("Hom")
 .WithOpenApi();
 
-app.MapGet("/clientes-com-pedidos", ([FromServices] BancoDeDadosContexto contexto) =>
+app.MapGet("/clientes-com-pedidos", ([FromServices] BancoDeDadosContexto contexto, [FromQuery] int? page) =>
 {
     //return contexto.Pedidos.ToList(); //Não traz a instancia de cliente;
     /*return contexto.Pedidos
@@ -106,17 +107,129 @@ app.MapGet("/clientes-com-pedidos", ([FromServices] BancoDeDadosContexto context
                     cli_telefone = p.Cliente.Telefone,
                     ValorTotal = p.ValorTotal
                 }).ToList();*/
-    var lista = contexto.Pedidos
+
+    var totalPage = 2;
+    if (page == null || page < 1)
+    {
+        page = 1;
+    }
+    int offset = ((int)page - 1) * totalPage;
+
+    //JOIN SIMPLES
+    /*var relatorioEntity = contexto.Pedidos
         .Include(p => p.Cliente)
-                .Select(p => new
+                .Select(p => new PedidoCliente
                 {
-                    cli_nome = p.Cliente.Nome,
-                    cli_telefone = p.Cliente.Telefone,
+                    Nome = p.Cliente.Nome,
+                    Telefone = p.Cliente.Telefone,
                     ValorTotal = p.ValorTotal
-                })
-                .Skip(0) // Offsetdefine o número de registros a serem ignorados
-                .Take(10) // limitador
+                });*/
+
+    //QUERY MAIS COMPLEXA - SEM GROUP BY
+    /*var relatorioEntity = contexto.Pedidos
+        .Include(p => p.Cliente)    //Não preciso fazer join pois em Pedido existe cliente
+        .Join(
+            contexto.PedidosProdutos,
+            pedido => pedido.Id,                        //Representante do lado da esquerda
+            pedidoProduto => pedidoProduto.PedidoId,    //Representante do lado da direita
+            (pedido, pedidoProduto) => new
+            {
+                Pedido = pedido,
+                PedidoProduto = pedidoProduto
+            }
+        )
+        .Join(
+            contexto.produtos,
+            p => p.PedidoProduto.ProdutoId,
+            produto => produto.Id,
+            (p, produto) => new PedidoCliente
+            {
+                PedidoId = p.Pedido.Id,
+                Nome = p.Pedido.Cliente.Nome,
+                Telefone = p.Pedido.Cliente.Telefone,
+                ValorTotal = p.Pedido.ValorTotal,
+                NomeProduto = produto.Nome,
+                QuantidadeVendidaParaProduto = p.PedidoProduto.Quantidade,
+                ValorVendidoParaProduto = p.PedidoProduto.Valor
+            }
+    );*/
+
+    // QUERY COM GROUP BY
+    /*var relatorioEntity = contexto.Pedidos
+        .Join
+        (
+            contexto.PedidosProdutos,
+            pedido => pedido.Id,                        //Representante do lado da esquerda
+            pedidoProduto => pedidoProduto.PedidoId,    //Representante do lado da direita
+            (pedido, pedidoProduto) => new
+            {
+                Pedido = pedido,
+                PedidoProduto = pedidoProduto
+            }
+        )
+        .Join
+        (
+            contexto.produtos,
+            p => p.PedidoProduto.ProdutoId,
+            produto => produto.Id,
+            (p, produto) => new PedidoCliente
+            {
+                PedidoId = p.Pedido.Id,
+                Nome = p.Pedido.Cliente.Nome,
+                Telefone = p.Pedido.Cliente.Telefone,
+                ValorTotal = p.Pedido.ValorTotal,
+                NomeProduto = produto.Nome,
+                QuantidadeVendidaParaProduto = p.PedidoProduto.Quantidade,
+                ValorVendidoParaProduto = p.PedidoProduto.Valor
+            }
+        ).GroupBy(p => new { p.PedidoId, p.Nome, p.Telefone, p.ValorTotal })
+        .Select(g => new PedidoClienteSomadas
+        {
+            PedidoId = g.Key.PedidoId,
+            Nome = g.Key.Nome,
+            Telefone = g.Key.Telefone,
+            ValorTotal = g.Key.ValorTotal,
+            QuantidadeSomadaProduto = g.Sum(p => p.QuantidadeVendidaParaProduto),
+            ValorSomadoProduto = g.Sum(p => p.ValorVendidoParaProduto)
+        });
+    */
+    //AGORA EXEMPLO COM LINQTOSQL
+    var relatorioEntity = (from pedido in contexto.Pedidos
+                           join pedidoProduto in contexto.PedidosProdutos on pedido.Id equals pedidoProduto.PedidoId
+                           join produto in contexto.Produtos on pedidoProduto.ProdutoId equals produto.Id
+                           select new PedidoCliente
+                           {
+                               PedidoId = pedido.Id,
+                               Nome = pedido.Cliente.Nome,
+                               Telefone = pedido.Cliente.Telefone,
+                               ValorTotal = pedido.ValorTotal,
+                               NomeProduto = produto.Nome,
+                               QuantidadeVendidaParaProduto = pedidoProduto.Quantidade,
+                               ValorVendidoParaProduto = pedidoProduto.Valor
+                           })
+        .GroupBy(p => new { p.PedidoId, p.Nome, p.Telefone, p.ValorTotal })
+        .Select(g => new PedidoClienteSomadas
+        {
+            PedidoId = g.Key.PedidoId,
+            Nome = g.Key.Nome,
+            Telefone = g.Key.Telefone,
+            ValorTotal = g.Key.ValorTotal,
+            QuantidadeSomadaProduto = g.Sum(p => p.QuantidadeVendidaParaProduto),
+            ValorSomadoProduto = g.Sum(p => p.ValorVendidoParaProduto)
+        });
+
+    var lista = relatorioEntity
+                .Skip(offset) // Offsetdefine o número de registros a serem ignorados
+                .Take(totalPage) // limitador
                 .ToList();
+
+    return new RegistroPaginado<PedidoClienteSomadas>
+    {
+        Registros = lista,
+        TotalPorPagina = totalPage,
+        PaginaCorrente = (int)page,
+        TotalRegistros = relatorioEntity.Count()
+    };
 })
 .WithName("ClientesComPedidos")
 .WithOpenApi();
